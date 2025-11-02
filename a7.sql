@@ -1,3 +1,5 @@
+.mode box
+
 -- Task 1: Creating and Timing the Query
 SELECT 'Task 1: Creating and Timing the Query' as task;
 
@@ -13,6 +15,7 @@ WHERE
 
 SELECT 'Task 1: QUERY Burgess Meredith' as TASK_1;
 
+.timer on
 SELECT movies.title AS movie_title, people.name AS actor_name
 FROM people
     INNER JOIN stars ON people.id = stars.person_id
@@ -20,6 +23,7 @@ FROM people
 WHERE
     people.name = 'Burgess Meredith';
 -- -- Run Time: real 1.456 user 0.959666 sys 0.477311
+.timer off
 
 -- Task 2: Speeding Up the Query
 SELECT 'Task 2: Speeding Up the Query' as TASK_2;
@@ -46,6 +50,7 @@ WHERE
 
 SELECT 'Task 2: QUERY Burgess Meredith with INDEX created' as TASK_2;
 
+.timer on
 SELECT movies.title AS movie_title, people.name AS actor_name
 FROM people
     INNER JOIN stars ON people.id = stars.person_id
@@ -53,11 +58,12 @@ FROM people
 WHERE
     people.name = 'Burgess Meredith';
 -- Run Time: real 0.000 user 0.000078 sys 0.000082
+.timer off
 
 --      Explanation:
 --          The previous query uses people.name to identify/filter records so it makes sense that this column should be indexed.
 --          In addition, searching/filtering also required JOIN, and stars.person_id is a good column to index. While other ids are using in the
---          JOINs, stars.person is only FK which is not automatically indexed.
+--          JOINs, stars.person_id is only FK which is not automatically indexed.
 --          Result:
 --              Before creating indexes: Run Time: real 1.338 user 0.913435 sys 0.423742
 --              After creating indexes: Run Time: real 0.000 user 0.000078 sys 0.000082 (improved)
@@ -67,12 +73,14 @@ WHERE
 SELECT 'Task 3: Effect of Indexes on Delete' as TASK_3;
 
 -- Note: I swapped position of WITHOUT and WITH - to reduce creating & dropping index actions
-SELECT 'now deleting stars WITH indexes (refer to 3rd Run Time below)' AS status;
+SELECT 'now deleting stars WITH indexes' AS status;
 
 BEGIN TRANSACTION;
+.timer on
 DELETE FROM stars
 WHERE
     rowid > 10000;
+.timer off    
 ROLLBACK;
 
 SELECT 'Task 3: DROP INDEX (cleanup before delete without index)' as TASK_3;
@@ -80,17 +88,19 @@ SELECT 'Task 3: DROP INDEX (cleanup before delete without index)' as TASK_3;
 DROP INDEX IF EXISTS idx_people_name;
 DROP INDEX IF EXISTS idx_fk_stars_person_id;
 
-SELECT 'now deleting stars without indexes (refer to 3rd Run Time below)' AS status;
+SELECT 'now deleting stars without indexes' AS status;
 BEGIN TRANSACTION;
+.timer on
 DELETE FROM stars
 WHERE
     rowid > 10000;
+.timer off
 ROLLBACK;
 
 --      Explanation:  
 --          Result: 
 --              With indexes: Run Time: real 1.263 user 1.150135 sys 0.109029
---              Without indexes: Run Time: real 0.512 user 0.449261 sys 0.061724 (improved!)
+--              Without indexes: Run Time: real 0.512 user 0.449261 sys 0.061724 (faster!)
 --          While searching can be faster with indexes, every changing operation (DELETE, INSERT, UPDATE) 
 --          such as deleting rows in table will require deletion of rows in the index/es. 
 --          This is the overhead that comes with having indexes for searching.
